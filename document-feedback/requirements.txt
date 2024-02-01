@@ -1,13 +1,8 @@
 openai
 python-dotenv
-azure-search-documents==11.4.0b8
-azure-identity
 langchain
 langchain_openai
 langchain_community
 pypdf
-openpyxl
 pandas
-uvicorn
-fastapi
 chromadb
