@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Simple Test</title>
+</head>
+
+<body>
+
+    <div>
+        <input type="radio" id="useWebsocket" name="method" value="websocket" checked>
+        <label for="useWebsocket">Use WebSocket</label>
+        <input type="radio" id="useFetch" name="method" value="fetch">
+        <label for="useFetch">Use Fetch</label>
+    </div>
+    <textarea id="messageInput" rows="10" cols="50"></textarea><br>
+    <button id="sendButton">Send</button>
+    <div id="messageOutput"></div>
+
+    <script>
+        let content = ''
+
+        let ws
+
+        function connectWebSocket() {
+            ws = new WebSocket("ws://localhost:8000/ws/completion"); // Replace with your server address
+
+            ws.onopen = () => {
+                console.log("WebSocket connection opened!");
+            }
+
+            ws.onmessage = (event) => {
+                const messageOutput = document.getElementById("messageOutput");
+                content = content + event.data;
+                messageOutput.textContent = content;
+            }
+
+            ws.onclose = (event) => {
+                console.log("Websocket closed. Reconnecting...");
+                sendButton.textContent = 'Send'
+                setTimeout(connectWebSocket, 1000); // Attempt to reconnect after a second
+            }
+        }
+
+        function sendMessageViaWebSocket(message) {
+            if (ws.readyState === WebSocket.OPEN) {
+                content = '';
+                ws.send(message);
+            } else {
+                console.log("WebSocket not ready. Message not sent.");
+            }
+            messageInput.value = '';
+        };
+
+        async function sendMessageViaFetch(message) {
+            try {
+                const response = await fetch('/api/completion', {
+                    method: 'POST',
+                    body: message
+                });
+
+                if (response.ok) {
+                    const data = await response.text();
+                    messageOutput.textContent = data;
+                } else {
+                    messageOutput.textContent = 'Error. Please check your API endpoint';
+                    console.error('Fetch error:', response.status);
+                }
+            } catch (error) {
+                messageOutput.textContent = 'Error sending message';
+                console.error('Error:', error);
+            } finally {
+                sendButton.textContent = 'Send';
+            }
+        }
+
+        const sendButton = document.getElementById("sendButton");
+        const messageInput = document.getElementById("messageInput");
+        const messageOutput = document.getElementById("messageOutput");
+        const useWebsocketRadio = document.getElementById("useWebsocket");
+        const useFetchRadio = document.getElementById("useFetch");
+
+        sendButton.addEventListener("click", () => {
+            const message = messageInput.value;
+            messageInput.value = '';
+            sendButton.textContent = 'Loading...';
+
+            if (useWebsocketRadio.checked) {
+                sendMessageViaWebSocket(message);
+            } else if (useFetchRadio.checked) {
+                sendMessageViaFetch(message);
+            }
+        });
+
+        connectWebSocket(); // Initialize the websocket
+    </script>
+
+</body>
+
+</html>
